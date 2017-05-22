@@ -1,0 +1,27 @@
+1. A RubyGem is essentially a self-contained program or bit of code that is written around a specific problem or purpose. It's addition in a program or project allows the developer to utilize pre-made functions that are part of the gem to address a particular need without having to program it on their own. Gems are useful because they can act as modules which can be plugged into a project and add functionality with relative ease and promote best practices as Gems evolve over time through iteration and improve through review and feedback.
+
+2. Eager loading is a situation where a item/function does everything that it is programmed to do when it is called. Whereas lazy loading will only do what it is programmed to do when the item/function is accessed. This can be useful in development as lazy loading can allow for faster load times initially by making the program only access what it needs when it needs it. And yet eager loading can be appropriate by pre-loading all data which can make for shortened response time later in the sequence.
+
+3. CREATE TABLE actually creates the table with the name provided in the command. On the other hand, INSERT INTO will add data values to the table specified by the command.
+
+4. Include and extend are very similar yet different in a small but important way. Include would be used for adding methods to an instance of a class. Whereas extend would be appropriate for adding class methods.
+
+5. It's important to set the save methods as instance methods because they need to interact with a particular instance of a class. You wouldn't want the record to change for the entire class on each call of the save function, it should only work on that particular instance. Therefore it is important to set the save function as an instance method to only work on that instance of the class rather than the entire class.
+
+6. The final SQL query will find the specific record based on it's ID and update its data in the table with the appropriate data from the field value.
+
+7. We've removed each of the initializers in the AddressBook and the Entry. So as a result, the instance variables used throughout the program aren't tied to anything and result in nil because they were never setup. To fix this we will have to either re-initialize the instance variables or point those variables to information in the database so that it has a value.
+
+def camelize(snake_word)
+  snake_word.gsub!(/_[a-z]/, &:upcase)
+  snake_word.gsub(/(_)([A-Z])/, '\2')
+end
+
+def find_by(attribute, value)
+  row = connection.get_first_row <<-SQL
+    SELECT #{columns.join ","} FROM #{table}
+    WHERE #{attribute} = #{BlocRecord::Utility.sql_strings(value)};
+  SQL
+
+  init_object_from_row(row)
+end
