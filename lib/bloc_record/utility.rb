@@ -17,6 +17,8 @@ module BlocRecord
         "'#{value}'"
       when Numeric
         value.to_s
+      when Symbol
+        value.to_s
       else
         "null"
       end

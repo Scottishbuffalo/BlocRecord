@@ -1,3 +1,4 @@
+require 'pg'
 require 'sqlite3'
 require 'bloc_record/schema'
 
@@ -20,9 +21,9 @@ module Persistence
     fields = sel.class.attributes.map { |col| "#{col}=#{BlocRecord::Utilitiy .sql_strings(self.instance_variable_get("@#{col}"))}" }.join(",")
 
     self.class.connection.execute <<-SQL
-      UPDATE #{self.class.table}
-      SET #{fields}
-      WHERE id = #{self.id}:
+    UPDATE #{self.class.table}
+    SET #{fields}
+    WHERE id = #{self.id}:
     SQL
     true
   end
@@ -45,14 +46,23 @@ module Persistence
       attrs.delete "id"
       vals = attributes.map { |key| BlocRecord::Utility.sql_strings(attrs[key]) }
 
-      connection.execute <<-SQL
+      if BlocRecord.database_type == 'pg'
+        connection.exec <<-SQL
+        INSERT INTO #{table} (#{attributes[1]})
+        VALUES (#{vals[1]})
+        SQL
+        data = Hash[attributes.zip attrs.values]
+        data["id"] = connection.exec("SELECT last_insert_rowid();")[0][0]
+        new(data)
+      else
+        connection.execute <<-SQL
         INSERT INTO #{table} (#{attributes.join ","})
         VALUES (#{vals.join ","})
-      SQL
-
-      data = Hash[attributes.zip attrs.values]
-      data["id"] = connection.execute("SELECT last_insert_rowid();")[0][0]
-      new(data)
+        SQL
+        data = Hash[attributes.zip attrs.values]
+        data["id"] = connection.execute("SELECT last_insert_rowid();")[0][0]
+        new(data)
+      end
     end
 
     def update(ids, updates)
@@ -70,8 +80,8 @@ module Persistence
         end
 
         connection.execute <<-SQL
-          UPDATE #{table}
-          SET #{updates_array * ","} #{where_clause}
+        UPDATE #{table}
+        SET #{updates_array * ","} #{where_clause}
         SQL
         true
       when Array
@@ -98,35 +108,35 @@ module Persistence
         where_clause = "WHERE id = #{id.first};"
       end
       connection.execute <<-SQL
-        DELETE FROM #{table} #{where_clause}
+      DELETE FROM #{table} #{where_clause}
       SQL
       true
     end
 
     def destroy_all(*args)
-       if args.empty?
-         connection.execute <<-SQL
-           DELETE FROM #{table}
-         SQL
-         return true
-       elsif args.count > 1
-         expression = args.shift
-         params = args
-       else
-         case args.first
-         when String
-           expression = args.first
-         when Hash
-           conditions = BlocRecord::Utility.convert_keys(args.first)
-           expression = conditions.map {|key, value| "#{key} = #{BlocRecord::Utility.sql_strings(value)}"}.join(' and ')
-         end
-       end
-       sql = <<-SQL
-         DELETE FROM #{table}
-         WHERE #{expression};
-       SQL
-       connection.execute(sql, params)
-       true
-     end
+      if args.empty?
+        connection.execute <<-SQL
+        DELETE FROM #{table}
+        SQL
+        return true
+      elsif args.count > 1
+        expression = args.shift
+        params = args
+      else
+        case args.first
+        when String
+          expression = args.first
+        when Hash
+          conditions = BlocRecord::Utility.convert_keys(args.first)
+          expression = conditions.map {|key, value| "#{key} = #{BlocRecord::Utility.sql_strings(value)}"}.join(' and ')
+        end
+      end
+      sql = <<-SQL
+      DELETE FROM #{table}
+      WHERE #{expression};
+      SQL
+      connection.execute(sql, params)
+      true
+    end
   end
 end
