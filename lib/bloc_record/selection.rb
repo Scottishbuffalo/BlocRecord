@@ -37,9 +37,11 @@ module Selection
     init_object_from_row(row)
   end
 
-  def method_missing(method, *args, &block)
-    if method == :find_by_name
-      find_by(:name, *args[0])
+  def method_missing(method_name, *arguments, &block)
+    if method_name.to_s =~ /find_by_(.*)/
+      find_by($1, *arguments[0])
+    else
+      super
     end
   end
 
@@ -149,22 +151,22 @@ module Selection
 
   def order(*args)
     if args.count > 1
-      order_clause = args.join(",")
+      order = args.join(",")
     else
-      order_clause = args.first.to_s
+      order = args.first.to_s
     else
       order = args.first.to_s
     end
     rows = connection.execute <<-SQL
     SELECT * FROM #{table}
-    ORDER BY #{order_clause};
+    ORDER BY #{order};
     SQL
     rows_to_array(rows)
   end
 
   def join(*args)
     if args.count > 1
-      joins = args.map { |arg| "INNER JOIN #{arg.to_s} ON #{arg.to_s}.#{table}_id = #{table}.id"}.join(" ")
+      joins = args.map { |arg| "INNER JOIN #{arg} ON #{arg}.#{table}_id = #{table}.id"}.join(" ")
       rows = connection.execute <<-SQL
       SELECT * FROM #{table} #{joins}
       SQL
@@ -179,9 +181,17 @@ module Selection
         SELECT * FROM #{table}
         INNER JOIN #{args.first} ON #{args.first}.#{table}_id = #{table}.id
         SQL
+      when Hash
+        expression_hash = BlocRecord::Utility.convert_keys(args.first)
+        expression = expression_hash.map { |key, value| "#{key} ON #{key}.#{table}_id = #{table}.id
+        INNER JOIN #{BlocRecord::Utility.sql_strings(value)} ON #{BlocRecord::Utility.sql_strings(value)}.#{key}_id = #{key}.id"}.join(" INNER JOIN ")
+
+        rows = connection.execute <<-SQL
+        SELECT * FROM #{table}
+        INNER JOIN #{expression};
+        SQL
       end
     end
-
     rows_to_array(rows)
   end
 
