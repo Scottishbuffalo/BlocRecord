@@ -36,9 +36,11 @@ module Selection
     init_object_from_row(row)
   end
 
-  def method_missing(method, *args, &block)
-    if method == :find_by_name
-      find_by(:name, *args[0])
+  def method_missing(method_name, *arguments, &block)
+    if method_name.to_s =~ /find_by_(.*)/
+      find_by($1, *arguments[0])
+    else
+      super
     end
   end
 
