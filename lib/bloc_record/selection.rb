@@ -150,6 +150,7 @@ module Selection
 
 
   def order(*args)
+
     if args.count > 1
       order = args.join(",")
     else
@@ -162,6 +163,7 @@ module Selection
     ORDER BY #{order};
     SQL
     rows_to_array(rows)
+    
   end
 
   def join(*args)

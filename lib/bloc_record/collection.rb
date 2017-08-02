@@ -6,23 +6,22 @@ module BlocRecord
 
     def where(data)
       result = []
-      for obj in self
         for key in data.keys
-          result += self.first.class.where("id" => obj.id, key => data[key])
+          result += self.class.update(self.id, { attribute => value })
         end
-      end
       result
     end
 
     def not(data)
-      result = []
-      for obj in self
-        for key in data.keys
-          result += self.first.class.where("id" => obj.id, key => !data[key])
-        end
+      data.compact!
+      if data.compact.count > 0
+        ids = self.map(&:id)
+        self.any? ? self.first.class.not(data.first, {ids: ids}) : false
+      else
+        self
       end
-      result
     end
+
     def update_all(updates)
       ids = self.map(&:id)
       self.any? ? self.first.class.update(ids, updates) : false
